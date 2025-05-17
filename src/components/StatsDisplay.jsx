@@ -1,18 +1,27 @@
 import React from 'react'
+import { useConfigStore } from '../store/configStore'
+import { useCalculationStore } from '../store/calculationStore'
+import { useAnimation } from '../store/uiContext.jsx'
 
-export default function StatsDisplay({
-  mainData,
-  comparisonData,
-  mainConfig,
-  comparisonConfig,
-  onAddComparisonConfig,
-  activeConfigId,
-  setActiveConfigId,
-  isAnimating = false,
-  removeComparisonConfig = () => {},
-}) {
+export default function StatsDisplay() {
+  // Get animation state from context
+  const { isAnimating } = useAnimation()
+  // Get data directly from stores - using individual selectors to avoid infinite loop
+  const activeConfigId = useConfigStore(state => state.activeConfigId)
+  const setActiveConfigId = useConfigStore(state => state.setActiveConfigId)
+  const addComparisonConfig = useConfigStore(state => state.addComparisonConfig)
+  const removeComparisonConfig = useConfigStore(state => state.removeComparisonConfig)
+  const hasComparison = useConfigStore(state => state.hasComparisonConfig())
+  const configs = useConfigStore(state => state.configs)
+
+  const { mainData, comparisonData } = useCalculationStore()
+
+  // Get configs from the store
+  const mainConfig = configs.main
+  const comparisonConfig = configs.comparison
+
   // Check if we have a comparison configuration
-  const hasComparisonConfig = comparisonConfig !== null
+  const hasComparisonConfig = hasComparison
 
   // Function to render the configuration card
   const renderConfigCard = (config, data, type = 'main') => {
@@ -165,9 +174,7 @@ export default function StatsDisplay({
                     (isAnimating && activeConfigId === 'comparison' ? 'animate-highlight' : '')
                   : 'border-gray-200 hover:border-blue-500 transition-colors cursor-pointer')
           }`}
-        onClick={
-          !hasComparisonConfig ? onAddComparisonConfig : () => setActiveConfigId('comparison')
-        }
+        onClick={!hasComparisonConfig ? addComparisonConfig : () => setActiveConfigId('comparison')}
       >
         {hasComparisonConfig
           ? renderConfigCard(comparisonConfig, comparisonData, 'comparison')

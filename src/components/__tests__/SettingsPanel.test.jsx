@@ -4,6 +4,11 @@ import SettingsPanel from '../SettingsPanel'
 import { setLegacyTestState, getLegacyTestState } from '../../store/testAdapter'
 import { useConfigStore } from '../../store/configStore'
 
+// Mock the useAnimation hook
+vi.mock('../../store/uiContext.jsx', () => ({
+  useAnimation: () => ({ isAnimating: false }),
+}))
+
 // Mock the NumberInputWithSlider component to simplify testing
 vi.mock('../NumberInputWithSlider', () => ({
   default: ({ label, value, onChange }) => (

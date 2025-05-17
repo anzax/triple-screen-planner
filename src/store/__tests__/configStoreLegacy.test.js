@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-// eslint-disable-next-line no-unused-vars
-import { useSettingsStore } from '../settingsStore'
+// Removed settingsStore import as it's no longer needed
 import { useConfigStore } from '../configStore'
 import { setLegacyTestState, getLegacyTestState } from '../testAdapter'
 
-describe('Settings Store', () => {
+describe('Config Store Legacy API', () => {
   // Reset store to initial state before each test
   beforeEach(() => {
     setLegacyTestState({
@@ -80,6 +79,46 @@ describe('Settings Store', () => {
     }))
 
     // Verify it was updated
+    const configState = useConfigStore.getState()
+    expect(configState.configs.main.ui.inputMode).toBe('manual')
+    expect(configState.configs.main.ui.angleMode).toBe('manual')
+  })
+
+  it('should update multiple properties with group setters', () => {
+    // Get group setters from the store
+    const { setScreen, setLayout, setUI } = useConfigStore.getState()
+
+    // Test updating multiple screen properties at once
+    setScreen({
+      diagIn: 27,
+      ratio: '21:9',
+      bezelMm: 10,
+    })
+
+    // Verify screen properties were updated
+    const state = getLegacyTestState()
+    expect(state.diagIn).toBe(27)
+    expect(state.ratio).toBe('21:9')
+    expect(state.bezelMm).toBe(10)
+
+    // Test updating layout properties
+    setLayout({
+      setupType: 'single',
+      manualAngle: 45,
+    })
+
+    // Verify layout properties were updated
+    const updatedState = getLegacyTestState()
+    expect(updatedState.setupType).toBe('single')
+    expect(updatedState.manualAngle).toBe(45)
+
+    // Test updating UI properties
+    setUI({
+      inputMode: 'manual',
+      angleMode: 'manual',
+    })
+
+    // Verify UI properties were updated
     const configState = useConfigStore.getState()
     expect(configState.configs.main.ui.inputMode).toBe('manual')
     expect(configState.configs.main.ui.angleMode).toBe('manual')

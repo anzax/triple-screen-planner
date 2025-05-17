@@ -1,7 +1,7 @@
-// src/utils/__tests__/geometryUI.test.js
+// src/geometry/__tests__/geometryUI.test.js
 import { describe, it, expect, beforeEach } from 'vitest'
-import { calculateSvgLayout } from '../geometryUI'
-import { calculateScreenGeometry } from '../geometryCore'
+import { calculateSvgLayout, createVisualizationData } from '../visualization'
+import { calculateStats } from '../calculations'
 import { RIG_CONSTANTS } from '../constants'
 
 describe('calculateSvgLayout', () => {
@@ -9,12 +9,41 @@ describe('calculateSvgLayout', () => {
 
   beforeEach(() => {
     // Create sample geometry data for testing
-    geomData = calculateScreenGeometry({
-      diagIn: 27,
-      ratio: '16:9',
-      distCm: 70,
-      bezelMm: 10,
-    }).geom
+    const config = {
+      screen: {
+        diagIn: 27,
+        ratio: '16:9',
+        bezelMm: 10,
+        screenWidth: 700,
+        screenHeight: 400,
+      },
+      distance: {
+        distCm: 70,
+      },
+      layout: {
+        setupType: 'triple',
+        manualAngle: 60,
+      },
+      curvature: {
+        isCurved: false,
+        curveRadius: 1000,
+      },
+      ui: {
+        inputMode: 'diagonal',
+        angleMode: 'auto',
+      },
+    }
+
+    const stats = calculateStats(config)
+    // Use createVisualizationData to generate visualization data
+    const visualData = createVisualizationData(config, stats)
+    geomData = {
+      pivotL: stats.geom.pivotL,
+      pivotR: stats.geom.pivotR,
+      uL: stats.geom.uL,
+      uR: stats.geom.uR,
+      svgArcs: visualData.arcs,
+    }
   })
 
   it('calculates correct SVG dimensions', () => {
@@ -39,22 +68,35 @@ describe('calculateSvgLayout', () => {
 
   it('generates SVG arcs for curved screens', () => {
     // Create geometry data with curved screens
-    const curvedGeomData = calculateScreenGeometry({
-      diagIn: 27,
-      ratio: '16:9',
-      distCm: 70,
-      bezelMm: 10,
-      setupType: 'triple',
-      angleMode: 'auto',
-      manualAngle: 60,
-      inputMode: 'diagonal',
-      screenWidth: 700,
-      screenHeight: 400,
-      isCurved: true,
-      curveRadius: 1000,
-    }).geom
+    const curvedConfig = {
+      screen: {
+        diagIn: 27,
+        ratio: '16:9',
+        bezelMm: 10,
+        screenWidth: 700,
+        screenHeight: 400,
+      },
+      distance: {
+        distCm: 70,
+      },
+      layout: {
+        setupType: 'triple',
+        manualAngle: 60,
+      },
+      curvature: {
+        isCurved: true,
+        curveRadius: 1000,
+      },
+      ui: {
+        inputMode: 'diagonal',
+        angleMode: 'auto',
+      },
+    }
 
-    const result = calculateSvgLayout(curvedGeomData, RIG_CONSTANTS)
+    const curvedStats = calculateStats(curvedConfig)
+
+    // Use createVisualizationData to generate visualization data
+    const result = createVisualizationData(curvedConfig, curvedStats)
 
     // Check that arcs array is returned
     expect(result).toHaveProperty('arcs')

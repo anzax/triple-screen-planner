@@ -12,7 +12,7 @@ describe('Config Store', () => {
         comparison: null,
       },
       activeConfigId: 'main',
-      version: '1.0',
+      version: '1.1', // Updated to match the new store version
     })
   })
 
@@ -23,7 +23,7 @@ describe('Config Store', () => {
     expect(state.configs.main).toEqual(defaultConfigState)
     expect(state.configs.comparison).toBeNull()
     expect(state.activeConfigId).toBe('main')
-    expect(state.version).toBe('1.0')
+    expect(state.version).toBe('1.1') // Updated to match the new store version
 
     // Test initial active config
     expect(state.getActiveConfig()).toEqual(defaultConfigState)

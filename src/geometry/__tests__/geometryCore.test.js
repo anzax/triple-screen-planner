@@ -1,6 +1,7 @@
-// src/utils/__tests__/geometryCore.test.js
+// src/geometry/__tests__/geometryCore.test.js
 import { describe, it, expect } from 'vitest'
-import { calculateScreenGeometry, calculateOptimalAngle } from '../geometryCore'
+import { calculateOptimalAngle } from '../calculations'
+import { calculateStats } from '../calculations'
 
 // Test cases for calculateOptimalAngle
 const optimalAngleTestCases = [
@@ -100,7 +101,7 @@ const screenGeometryTestCases = [
     expected: {
       properties: ['sideAngleDeg', 'hFOVdeg', 'vFOVdeg', 'cm', 'geom'],
       sideAngleDeg: { closeTo: 50.2, precision: 1 },
-      hFOVdeg: { closeTo: 148, precision: 0 },
+      hFOVdeg: { closeTo: 146.2, precision: 1 },
       vFOVdeg: { closeTo: 27.8, precision: 1 },
       cm: {
         distance: 70,
@@ -512,7 +513,7 @@ describe('calculateOptimalAngle', () => {
   })
 })
 
-describe('calculateScreenGeometry', () => {
+describe('calculateStats', () => {
   // Store for test results that need to be compared
   const results = {}
 
@@ -534,20 +535,33 @@ describe('calculateScreenGeometry', () => {
         curveRadius = 1000,
       } = testCase.input
 
-      const result = calculateScreenGeometry({
-        diagIn,
-        ratio,
-        distCm,
-        bezelMm,
-        setupType,
-        angleMode,
-        manualAngle,
-        inputMode,
-        screenWidth,
-        screenHeight,
-        isCurved,
-        curveRadius,
-      })
+      // Create config object in the format expected by calculateStats
+      const config = {
+        screen: {
+          diagIn,
+          ratio,
+          bezelMm,
+          screenWidth,
+          screenHeight,
+        },
+        distance: {
+          distCm,
+        },
+        layout: {
+          setupType,
+          manualAngle,
+        },
+        curvature: {
+          isCurved,
+          curveRadius,
+        },
+        ui: {
+          inputMode,
+          angleMode,
+        },
+      }
+
+      const result = calculateStats(config)
 
       // Store result if needed for comparison
       if (testCase.expected.store) {

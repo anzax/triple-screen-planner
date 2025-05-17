@@ -3,15 +3,15 @@ import NumberInputWithSlider from './ui/NumberInputWithSlider.jsx'
 import NumberInput from './ui/NumberInput.jsx'
 import MultiToggle from './ui/MultiToggle.jsx'
 import { useConfigStore } from '../store/configStore'
-import { calculateSideAngle } from '../utils/geometryCore'
+import { calculateSideAngle } from '../geometry/calculations'
+import { useAnimation } from '../store/uiContext.jsx'
 
-export default function SettingsPanel({
-  // hasComparisonConfig is needed for future functionality
-  // eslint-disable-next-line no-unused-vars
-  hasComparisonConfig = false,
-  activeConfigId = 'main',
-  isAnimating = false,
-}) {
+export default function SettingsPanel() {
+  // Get animation state from context
+  const { isAnimating } = useAnimation()
+  // Get data directly from the store
+  const activeConfigId = useConfigStore(state => state.activeConfigId)
+
   // Get the active configuration directly
   const activeConfig = useConfigStore(state => {
     const configs = state.configs
@@ -109,14 +109,33 @@ export default function SettingsPanel({
             <div className="space-y-3">
               {/* Info Message */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg py-1.5 px-2 text-xs text-blue-700">
-                Measure screen dimensions including bezels
+                Measure total screen dimensions
               </div>
 
-              {/* Width */}
-              <NumberInput label="Width, mm" value={screenWidth} onChange={setScreenWidth} />
+              {/* Width and Height in a single row */}
+              <div className="flex space-x-2">
+                <NumberInput
+                  label="Width, mm"
+                  value={screenWidth}
+                  onChange={setScreenWidth}
+                  className="flex-1"
+                />
+                <NumberInput
+                  label="Height, mm"
+                  value={screenHeight}
+                  onChange={setScreenHeight}
+                  className="flex-1"
+                />
+              </div>
 
-              {/* Height */}
-              <NumberInput label="Height, mm" value={screenHeight} onChange={setScreenHeight} />
+              {/* Bezel thickness */}
+              <NumberInputWithSlider
+                label="Bezel width, mm"
+                min={0}
+                max={50}
+                value={bezelMm}
+                onChange={setBezelMm}
+              />
             </div>
           )}
         </div>

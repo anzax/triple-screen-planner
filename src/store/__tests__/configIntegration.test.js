@@ -1,40 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useConfigStore, defaultConfigState } from '../configStore'
-// No longer need to import useUIStore
-import { useScreenCalculations } from '../../hooks/useScreenCalculations'
+import { useCalculationStore } from '../calculationStore'
 
-// Mock the useScreenCalculations hook
-vi.mock('../../hooks/useScreenCalculations', () => ({
-  useScreenCalculations: vi.fn().mockImplementation(
-    (
-      // These parameters are used internally in the mock
-      // eslint-disable-next-line no-unused-vars
-      diagIn,
-      // eslint-disable-next-line no-unused-vars
-      ratio,
-      // eslint-disable-next-line no-unused-vars
-      distCm,
-      // eslint-disable-next-line no-unused-vars
-      bezelMm,
-      // eslint-disable-next-line no-unused-vars
-      setupType,
-      // eslint-disable-next-line no-unused-vars
-      angleMode,
-      // eslint-disable-next-line no-unused-vars
-      manualAngle,
-      // eslint-disable-next-line no-unused-vars
-      inputMode,
-      // eslint-disable-next-line no-unused-vars
-      screenWidth,
-      // eslint-disable-next-line no-unused-vars
-      screenHeight,
-      // eslint-disable-next-line no-unused-vars
-      isCurved,
-      // eslint-disable-next-line no-unused-vars
-      curveRadius
-    ) => {
-      // Return simplified mock data for testing
-      return {
+// Mock the calculation store
+vi.mock('../calculationStore', () => ({
+  useCalculationStore: {
+    getState: vi.fn().mockReturnValue({
+      calculateConfig: vi.fn().mockReturnValue({
         data: {
           sideAngleDeg: 45,
           hFOVdeg: 120,
@@ -44,9 +16,9 @@ vi.mock('../../hooks/useScreenCalculations', () => ({
         view: {
           /* mock view data */
         },
-      }
-    }
-  ),
+      }),
+    }),
+  },
 }))
 
 describe('Config Store Integration', () => {
@@ -69,42 +41,19 @@ describe('Config Store Integration', () => {
     vi.clearAllMocks()
   })
 
-  it('should integrate with useScreenCalculations for main config', () => {
+  it('should integrate with calculationStore for main config', () => {
     // Get the main config
     const mainConfig = useConfigStore.getState().configs.main
-    const uiState = mainConfig.ui || { inputMode: 'diagonal', angleMode: 'auto' }
+
+    // Get the calculation store and its calculateConfig function
+    const calculationStore = useCalculationStore.getState()
+    const { calculateConfig } = calculationStore
 
     // Calculate using main config
-    const { data } = useScreenCalculations(
-      mainConfig.screen.diagIn,
-      mainConfig.screen.ratio,
-      mainConfig.distance.distCm,
-      mainConfig.screen.bezelMm,
-      mainConfig.layout.setupType,
-      uiState.angleMode,
-      mainConfig.layout.manualAngle,
-      uiState.inputMode,
-      mainConfig.screen.screenWidth,
-      mainConfig.screen.screenHeight,
-      mainConfig.curvature.isCurved,
-      mainConfig.curvature.curveRadius
-    )
+    const { data } = calculateConfig(mainConfig)
 
     // Verify calculation was called correctly
-    expect(useScreenCalculations).toHaveBeenCalledWith(
-      32, // diagIn
-      '16:9', // ratio
-      60, // distCm
-      0, // bezelMm
-      'triple', // setupType
-      'auto', // angleMode
-      60, // manualAngle
-      'diagonal', // inputMode
-      700, // screenWidth
-      400, // screenHeight
-      false, // isCurved
-      1000 // curveRadius
-    )
+    expect(calculateConfig).toHaveBeenCalledWith(mainConfig)
 
     // Verify we got the expected results
     expect(data.sideAngleDeg).toBe(45)
@@ -132,39 +81,20 @@ describe('Config Store Integration', () => {
 
     // Calculate using comparison config - AFTER modifying it
     const comparisonConfig = useConfigStore.getState().configs.comparison // Get fresh config
-    const uiState = comparisonConfig.ui || { inputMode: 'diagonal', angleMode: 'auto' }
 
-    // Destructure and use data to avoid unused variable warning
-    useScreenCalculations(
-      comparisonConfig.screen.diagIn,
-      comparisonConfig.screen.ratio,
-      comparisonConfig.distance.distCm,
-      comparisonConfig.screen.bezelMm,
-      comparisonConfig.layout.setupType,
-      uiState.angleMode,
-      comparisonConfig.layout.manualAngle,
-      uiState.inputMode,
-      comparisonConfig.screen.screenWidth,
-      comparisonConfig.screen.screenHeight,
-      comparisonConfig.curvature.isCurved,
-      comparisonConfig.curvature.curveRadius
-    )
+    // Get the calculation store and its calculateConfig function
+    const calculationStore = useCalculationStore.getState()
+    const { calculateConfig } = calculationStore
 
-    // Verify calculation was called with updated params
-    expect(useScreenCalculations).toHaveBeenCalledWith(
-      40, // diagIn (updated)
-      expect.any(String), // ratio
-      expect.any(Number), // distCm
-      expect.any(Number), // bezelMm
-      expect.any(String), // setupType
-      expect.any(String), // angleMode
-      expect.any(Number), // manualAngle
-      expect.any(String), // inputMode
-      expect.any(Number), // screenWidth
-      expect.any(Number), // screenHeight
-      true, // isCurved (updated)
-      expect.any(Number) // curveRadius
-    )
+    // Calculate using comparison config
+    calculateConfig(comparisonConfig)
+
+    // Verify calculation was called with the updated comparison config
+    expect(calculateConfig).toHaveBeenCalledWith(comparisonConfig)
+
+    // Verify the specific updated properties
+    expect(comparisonConfig.screen.diagIn).toBe(40) // diagIn (updated)
+    expect(comparisonConfig.curvature.isCurved).toBe(true) // isCurved (updated)
 
     // Switch back to main config
     useConfigStore.getState().setActiveConfigId('main')

@@ -4,11 +4,17 @@ import Screens from './visualizer/Screens'
 import FOVLines from './visualizer/FOVLines'
 import ReferenceGrid from './visualizer/ReferenceGrid'
 import { calculateViewportConfig } from '../utils/viewportManager'
+import { useCalculationStore } from '../store/calculationStore'
+import { useConfigStore } from '../store/configStore'
 
 // Create a context to share data with all child components
 export const VisualizerContext = createContext({})
 
-export default function ScreenVisualizer({ view, comparisonView }) {
+export default function ScreenVisualizer() {
+  // Get view data directly from the calculation store
+  const { mainView, comparisonView } = useCalculationStore()
+  const hasComparisonConfig = useConfigStore(state => state.hasComparisonConfig())
+
   // Create a safe default view for initial rendering or error cases
   const defaultView = {
     widthPx: 800,
@@ -20,8 +26,8 @@ export default function ScreenVisualizer({ view, comparisonView }) {
   }
 
   // Safely use the view or fallback to defaults
-  const safeView = view || defaultView
-  const safeComparisonView = comparisonView || null
+  const safeView = mainView || defaultView
+  const safeComparisonView = hasComparisonConfig ? comparisonView : null
   const [debug, setDebug] = useState(false)
   const [showFOV, setShowFOV] = useState(true)
 

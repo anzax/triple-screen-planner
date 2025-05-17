@@ -1,10 +1,6 @@
-// src/utils/__tests__/curvedScreenGeometry.test.js
+// src/geometry/__tests__/curvedScreenGeometry.test.js
 import { describe, it, expect } from 'vitest'
-import {
-  calculateCurvedScreenGeometry,
-  createBezierArc,
-  generateCurvedScreenArcs,
-} from '../curvedScreenGeometry'
+import { calculateCurvedScreenGeometry, createBezierArc, generateCurvedScreenArcs } from '../curved'
 
 describe('calculateCurvedScreenGeometry', () => {
   // Test case for center screen (no rotation, no mirroring)
@@ -149,17 +145,6 @@ describe('calculateCurvedScreenGeometry', () => {
     expect(result.yawDeg).toBe(45)
     expect(result.pivotX).toBe(12)
 
-    // Log the actual values for debugging
-    console.log('Side screen geometry:')
-    console.log('- startPoint:', result.startPoint)
-    console.log('- controlPoint:', result.controlPoint)
-    console.log('- endPoint:', result.endPoint)
-    console.log('- circleCenterX:', result.circleCenterX)
-    console.log('- circleCenterY:', result.circleCenterY)
-    console.log('- radius:', result.radius)
-    console.log('- actualDeepestPoint:', result.actualDeepestPoint)
-    console.log('- idealPoints:', result.idealPoints)
-
     // For rotated and mirrored screens, we need to verify the rotation and mirroring math
 
     // 1. Verify that the circle passes through the start and end points
@@ -205,18 +190,10 @@ describe('calculateCurvedScreenGeometry', () => {
       Math.pow(result.startPoint.x - pivotX, 2) + Math.pow(result.startPoint.y - centerY, 2)
     )
 
-    // Log the distance for debugging
-    console.log('- Distance from pivot to start point:', distanceToPivot)
-
     // Due to the rotation and mirroring, the distance is not simply half the chord width
     // Instead, we'll verify that the distance is reasonable (greater than 0 and less than twice the chord width)
     expect(distanceToPivot).toBeGreaterThan(0)
     expect(distanceToPivot).toBeLessThan(chordW * 2)
-
-    // Log the angle for debugging
-    const angleToStart =
-      (Math.atan2(result.startPoint.y - centerY, result.startPoint.x - pivotX) * 180) / Math.PI
-    console.log('- Angle to start point:', angleToStart)
 
     // Verify that the start point is not at the original position (-chordW/2, centerY)
     expect(result.startPoint.x).not.toBe(-chordW / 2)
@@ -263,18 +240,6 @@ describe('calculateCurvedScreenGeometry', () => {
       pivotX,
       0.5
     )
-
-    // Log the results for debugging
-    console.log('Apex shift multiplier test:')
-    console.log('- Default multiplier (1.0):')
-    console.log('  - controlPoint:', result1.controlPoint)
-    console.log('  - actualDeepestPoint:', result1.actualDeepestPoint)
-    console.log('- Increased multiplier (1.5):')
-    console.log('  - controlPoint:', result2.controlPoint)
-    console.log('  - actualDeepestPoint:', result2.actualDeepestPoint)
-    console.log('- Decreased multiplier (0.5):')
-    console.log('  - controlPoint:', result3.controlPoint)
-    console.log('  - actualDeepestPoint:', result3.actualDeepestPoint)
 
     // Verify that the control point (shifted apex) changes with the multiplier
     // but the actual deepest point remains the same
@@ -340,6 +305,7 @@ describe('calculateCurvedScreenGeometry', () => {
     expect(resultNegative.controlPoint.y).toBe(centerY + sagittaIn) // Negative depth (away from viewer)
     expect(resultLarge.controlPoint.y).toBe(centerY - sagittaIn * 3.0) // Triple depth
   })
+
   // Test case specifically for verifying actual and shifted dots are not in the same place for main curved screen
   it('verifies actual and shifted dots are not in the same place for main curved screen when apexShiftMultiplier != 1.0', () => {
     // Parameters for a typical center screen
@@ -361,11 +327,6 @@ describe('calculateCurvedScreenGeometry', () => {
       pivotX,
       apexShiftMultiplier
     )
-
-    // Log the results for debugging
-    console.log('Main curved screen test with apexShiftMultiplier =', apexShiftMultiplier)
-    console.log('- controlPoint:', result.controlPoint)
-    console.log('- actualDeepestPoint:', result.actualDeepestPoint)
 
     // Verify that the control point (shifted apex) and actual deepest point are not in the same place
     expect(result.controlPoint.y).not.toBe(result.actualDeepestPoint[1])
@@ -515,14 +476,6 @@ describe('generateCurvedScreenArcs', () => {
       expect(arc).toHaveProperty('actualDeepestPoint')
     })
 
-    // Log the actual values for debugging
-    console.log('Triple screen arcs:')
-    result.forEach((arc, i) => {
-      console.log(`Arc ${i} startX:`, arc.startX, 'startY:', arc.startY)
-      console.log(`Arc ${i} controlX:`, arc.controlX, 'controlY:', arc.controlY)
-      console.log(`Arc ${i} endX:`, arc.endX, 'endY:', arc.endY)
-    })
-
     // Center screen
     const centerArc = result[0]
     expect(centerArc.startX).toBe(-screenW / 2)
@@ -564,18 +517,6 @@ describe('generateCurvedScreenArcs', () => {
     // For triple screen, we should have 3 arcs
     expect(result.length).toBe(3)
 
-    // Log the results for debugging
-    console.log('Triple screen test with apexShiftMultiplier =', apexShiftMultiplier)
-    result.forEach((arc, i) => {
-      const screenName = i === 0 ? 'Center' : i === 1 ? 'Right' : 'Left'
-      console.log(`- ${screenName} screen:`)
-      console.log(`  - controlX: ${arc.controlX}, controlY: ${arc.controlY}`)
-      console.log(
-        `  - actualDeepestPoint: [${arc.actualDeepestPoint[0]}, ${arc.actualDeepestPoint[1]}]`
-      )
-      console.log(`  - actualDeepestY: ${arc.actualDeepestY}`)
-    })
-
     // Center screen - control point should be shifted by multiplier
     const centerArc = result[0]
     expect(centerArc.controlY).toBe(centerY - depth * apexShiftMultiplier)
@@ -603,12 +544,6 @@ describe('generateCurvedScreenArcs', () => {
       Math.pow(leftArc.controlX - leftArc.actualDeepestPoint[0], 2) +
         Math.pow(leftArc.controlY - leftArc.actualDeepestPoint[1], 2)
     )
-
-    // Log the distances for debugging
-    console.log('- Distances between control points and actual deepest points:')
-    console.log(`  - Center: ${centerDistance}`)
-    console.log(`  - Right: ${rightDistance}`)
-    console.log(`  - Left: ${leftDistance}`)
 
     // For apexShiftMultiplier = 2.0, the control points should be further from the actual deepest points
     // We can't easily predict the exact values due to rotation and mirroring,
@@ -664,21 +599,6 @@ describe('generateCurvedScreenArcs', () => {
       pivotX,
       apexShiftMultiplier
     )
-
-    // Log the results for debugging
-    console.log('Sagitta test:')
-    console.log('- Small sagitta (1 inch):')
-    console.log(`  - radius: ${resultSmall.radius}`)
-    console.log(`  - circleCenterY: ${resultSmall.circleCenterY}`)
-    console.log(`  - controlPoint: ${JSON.stringify(resultSmall.controlPoint)}`)
-    console.log('- Medium sagitta (3 inches):')
-    console.log(`  - radius: ${resultMedium.radius}`)
-    console.log(`  - circleCenterY: ${resultMedium.circleCenterY}`)
-    console.log(`  - controlPoint: ${JSON.stringify(resultMedium.controlPoint)}`)
-    console.log('- Large sagitta (6 inches):')
-    console.log(`  - radius: ${resultLarge.radius}`)
-    console.log(`  - circleCenterY: ${resultLarge.circleCenterY}`)
-    console.log(`  - controlPoint: ${JSON.stringify(resultLarge.controlPoint)}`)
 
     // Verify that the control points are at the correct depths
     expect(resultSmall.controlPoint.y).toBe(centerY - smallSagitta)

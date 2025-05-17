@@ -1,9 +1,73 @@
-// No conversions needed in this file
+// Visualization-related geometry functions
 import {
   calculateCurvedScreenGeometry,
   createBezierArc,
   generateCurvedScreenArcs as generateArcs,
-} from './curvedScreenGeometry'
+} from './curved'
+
+/**
+ * Generate visualization data from configuration and statistics
+ *
+ * This function takes the output of calculateStats() from calculations.js
+ * and transforms it into visualization data for rendering in the UI.
+ *
+ * @param {Object} config - The configuration object with screen, distance, layout, and curvature properties
+ * @param {Object} stats - The statistics object returned by calculateStats() function
+ * @param {Object} stats.geom - Geometry data needed for visualization
+ * @param {Object} stats.geom.pivotL - Left pivot point coordinates {x, y}
+ * @param {Object} stats.geom.pivotR - Right pivot point coordinates {x, y}
+ * @param {Object} stats.geom.uL - Left direction vector {x, y}
+ * @param {Object} stats.geom.uR - Right direction vector {x, y}
+ * @param {boolean} stats.geom.isCurved - Whether the screen is curved
+ * @param {number} stats.geom.W_eff - Effective width
+ * @param {number} stats.geom.d_eff - Effective distance
+ * @param {number} stats.geom.s - Sagitta (depth) for curved screens
+ * @param {string} stats.geom.setupType - Setup type ('single' or 'triple')
+ * @param {number} stats.geom.a - Half width plus bezel
+ * @param {number} stats.sideAngleDeg - Side angle in degrees
+ * @returns {Object} Visualization data for rendering
+ */
+export function createVisualizationData(config, stats) {
+  const { geom, sideAngleDeg } = stats
+  const { isCurved, setupType, W_eff, d_eff, s, a, pivotL, pivotR, uL, uR } = geom
+
+  // Create basic rendering structure
+  const visualData = {
+    type: isCurved ? 'curved' : 'flat',
+    screenEdges: [],
+    lines: [],
+    arcs: [],
+  }
+
+  // Generate screen representation
+  if (isCurved) {
+    // Generate SVG arcs for curved screens
+    const centerY = -d_eff // chord plane
+    const screenW = W_eff // effective width
+
+    // Use the UI module to generate SVG arcs
+    visualData.arcs = generateCurvedScreenArcs(screenW, centerY, s, sideAngleDeg, setupType, a)
+  } else {
+    // For flat screens, use the placement vectors
+    visualData.lines = [
+      { x1: pivotL.x, y1: pivotL.y, x2: pivotL.x + uL.x, y2: pivotL.y + uL.y },
+      { x1: pivotR.x, y1: pivotR.y, x2: pivotR.x + uR.x, y2: pivotR.y + uR.y },
+      { x1: pivotL.x, y1: pivotL.y, x2: pivotR.x, y2: pivotR.y },
+    ]
+  }
+
+  // Process the visualization data for SVG rendering
+  const svgLayout = calculateSvgLayout({
+    pivotL,
+    pivotR,
+    uL,
+    uR,
+    svgArcs: visualData.arcs,
+  })
+
+  // Return the processed visualization data
+  return svgLayout
+}
 
 /* ------------------------------------------------------------------
  *  Bézier helper for curved-panel SVG preview
@@ -44,7 +108,7 @@ export function generateCurvedScreenArcs(
   pivotDistance,
   apexShiftMultiplier = 2.75
 ) {
-  // Use the function from curvedScreenGeometry.js
+  // Use the function from curved.js
   return generateArcs(
     screenW,
     centerY,
